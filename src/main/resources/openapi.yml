@@ -1,0 +1,350 @@
+openapi: 3.0.3
+
+info:
+  title: API de Clientes
+  description: Gestión de clientes con respuestas JSON y errores normalizados.
+  version: 1.0.0
+
+tags:
+  - name: Clientes
+    description: Operaciones de gestión de clientes
+
+paths:
+  /clientes:
+    get:
+      tags: [Clientes]
+      summary: Listar clientes
+      operationId: listarClientes
+      parameters:
+        - name: page
+          in: query
+          description: Número de página, comenzando en cero.
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: size
+          in: query
+          description: Cantidad máxima de clientes por página.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: nombre
+          in: query
+          description: Filtrar por coincidencia parcial del nombre.
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 120
+      responses:
+        '200':
+          description: Página de clientes.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginaClientes'
+        '400':
+          $ref: '#/components/responses/SolicitudInvalida'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+
+    post:
+      tags: [Clientes]
+      summary: Crear un cliente
+      operationId: crearCliente
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClienteEntrada'
+      responses:
+        '201':
+          description: Cliente creado.
+          headers:
+            Location:
+              description: Ruta del cliente creado.
+              schema:
+                type: string
+                example: /clientes/1
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cliente'
+        '400':
+          $ref: '#/components/responses/SolicitudInvalida'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '415':
+          $ref: '#/components/responses/TipoNoSoportado'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+
+  /clientes/{id}:
+    parameters:
+      - $ref: '#/components/parameters/ClienteId'
+
+    get:
+      tags: [Clientes]
+      summary: Obtener un cliente
+      operationId: obtenerCliente
+      responses:
+        '200':
+          description: Cliente encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cliente'
+        '400':
+          $ref: '#/components/responses/SolicitudInvalida'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+
+    put:
+      tags: [Clientes]
+      summary: Reemplazar los datos de un cliente
+      description: Actualiza todos los campos editables de un cliente existente.
+      operationId: actualizarCliente
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClienteEntrada'
+      responses:
+        '200':
+          description: Cliente actualizado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cliente'
+        '400':
+          $ref: '#/components/responses/SolicitudInvalida'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '415':
+          $ref: '#/components/responses/TipoNoSoportado'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+
+    delete:
+      tags: [Clientes]
+      summary: Eliminar un cliente
+      operationId: eliminarCliente
+      responses:
+        '204':
+          description: Cliente eliminado. Sin cuerpo de respuesta.
+        '400':
+          $ref: '#/components/responses/SolicitudInvalida'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '500':
+          $ref: '#/components/responses/ErrorInterno'
+
+components:
+  parameters:
+    ClienteId:
+      name: id
+      in: path
+      required: true
+      description: Identificador del cliente.
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+      example: 1
+
+  schemas:
+    ClienteEntrada:
+      type: object
+      additionalProperties: false
+      required: [nombre, email]
+      properties:
+        nombre:
+          type: string
+          minLength: 1
+          maxLength: 120
+          pattern: '\S'
+          example: Ana García
+        email:
+          type: string
+          format: email
+          maxLength: 254
+          description: Debe ser único entre los clientes.
+          example: ana@example.com
+        telefono:
+          type: string
+          minLength: 1
+          maxLength: 30
+          example: '+34600111222'
+
+    Cliente:
+      type: object
+      required: [id, nombre, email, creadoEn, actualizadoEn]
+      properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 1
+          readOnly: true
+          example: 1
+        nombre:
+          type: string
+          example: Ana García
+        email:
+          type: string
+          format: email
+          example: ana@example.com
+        telefono:
+          type: string
+          example: '+34600111222'
+        creadoEn:
+          type: string
+          format: date-time
+          readOnly: true
+          example: '2026-11-13T18:00:00Z'
+        actualizadoEn:
+          type: string
+          format: date-time
+          readOnly: true
+          example: '2026-11-13T18:00:00Z'
+
+    PaginaClientes:
+      type: object
+      required: [content, page, size, totalElements, totalPages]
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/Cliente'
+        page:
+          type: integer
+          minimum: 0
+          example: 0
+        size:
+          type: integer
+          minimum: 1
+          maximum: 100
+          example: 20
+        totalElements:
+          type: integer
+          format: int64
+          minimum: 0
+          example: 1
+        totalPages:
+          type: integer
+          minimum: 0
+          example: 1
+
+    Error:
+      type: object
+      description: Error normalizado con formato Problem Details (RFC 9457).
+      required: [type, title, status, detail, instance]
+      properties:
+        type:
+          type: string
+          format: uri
+          example: about:blank
+        title:
+          type: string
+          example: Solicitud inválida
+        status:
+          type: integer
+          minimum: 400
+          maximum: 599
+          example: 400
+        detail:
+          type: string
+          example: Uno o más campos no son válidos.
+        instance:
+          type: string
+          format: uri-reference
+          example: /clientes
+        errors:
+          type: array
+          description: Detalles opcionales de validación.
+          items:
+            type: object
+            required: [field, message]
+            properties:
+              field:
+                type: string
+                example: email
+              message:
+                type: string
+                example: Debe ser una dirección de correo válida.
+
+  responses:
+    SolicitudInvalida:
+      description: JSON mal formado, campos inválidos o parámetros incorrectos.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            type: about:blank
+            title: Solicitud inválida
+            status: 400
+            detail: Uno o más campos no son válidos.
+            instance: /clientes
+            errors:
+              - field: email
+                message: Debe ser una dirección de correo válida.
+
+    NoEncontrado:
+      description: El cliente solicitado no existe.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            type: about:blank
+            title: Cliente no encontrado
+            status: 404
+            detail: No existe un cliente con el identificador 1.
+            instance: /clientes/1
+
+    Conflicto:
+      description: El correo electrónico ya pertenece a otro cliente.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            type: about:blank
+            title: Conflicto
+            status: 409
+            detail: Ya existe un cliente con ese correo electrónico.
+            instance: /clientes
+
+    TipoNoSoportado:
+      description: El cuerpo debe enviarse con Content-Type application/json.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            type: about:blank
+            title: Tipo de contenido no soportado
+            status: 415
+            detail: Utiliza Content-Type application/json.
+            instance: /clientes
+
+    ErrorInterno:
+      description: Error inesperado. No expone detalles internos del servidor.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            type: about:blank
+            title: Error interno
+            status: 500
+            detail: No se pudo completar la operación.
+            instance: /clientes
