@@ -1,0 +1,59 @@
+openapi: 3.0.3
+info:
+  title: API de Clientes
+  version: 1.0.0
+  description: Contrato de ejemplo para el listado de clientes.
+paths:
+  /clientes:
+    get:
+      summary: Lista de clientes
+      operationId: listarClientes
+      responses:
+        "200":
+          description: Listado de clientes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Cliente"
+              example:
+                - id: 1
+                  tipoDocumento: DNI
+                  documento: "45879632"
+                  nombre: Ana Torres Ríos
+                  email: ana.torres@example.com
+                  estado: ACTIVO
+                - id: 2
+                  tipoDocumento: DNI
+                  documento: "70125896"
+                  nombre: Luis Mendoza Paredes
+                  email: luis.mendoza@example.com
+                  estado: ACTIVO
+                - id: 3
+                  tipoDocumento: RUC
+                  documento: "20548796321"
+                  nombre: Comercial Andina S.A.C.
+                  email: contacto@comercialandina.example.com
+                  estado: INACTIVO
+components:
+  schemas:
+    Cliente:
+      type: object
+      required: [id, tipoDocumento, documento, nombre, estado]
+      properties:
+        id:
+          type: integer
+        tipoDocumento:
+          type: string
+          enum: [DNI, RUC, CE]
+        documento:
+          type: string
+        nombre:
+          type: string
+        email:
+          type: string
+          format: email
+        estado:
+          type: string
+          enum: [ACTIVO, INACTIVO]

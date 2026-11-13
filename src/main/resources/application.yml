@@ -1,0 +1,14 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: clientes-mock
+
+# Contrato que alimenta el mock.
+# Puede ser interno (classpath:) o externo (file:), por ejemplo:
+#   path: file:D:/ctrlimpact/contratos/clientes-api.yaml
+contract:
+  path: classpath:contract/clientes-api.yaml
+  endpoint: /clientes
+  status: "200"
